@@ -52,12 +52,10 @@ class RequestModifier:
             answer = model.predict(model_input)
             answer = answer.ravel().tolist()
             if(answer[0]>=0.5):
-                print(answer[0])
-                print('\n')
+
                 final_ans = 1
             else:
-                print(answer[0])
-                print('/n')
+
                 final_ans = 0
             #print('first is '+str(answer[0])+' final ans is '+str(final_ans)+'\n')
             if(final_ans == 0):
