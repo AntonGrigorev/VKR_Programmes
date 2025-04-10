@@ -1,0 +1,60 @@
+services:
+
+  sender:
+    #build:
+      #context: .
+      #dockerfile: Dockerfile.sender 
+    image: ubuntu:24.04
+    container_name: vm1_sender
+    volumes:
+      - ./send_data.py:/app/send_data.py
+      - ./data:/app/data
+      - ./certs:/app/certs
+    working_dir: /app
+    depends_on:
+      mitmproxy:
+          condition: service_healthy
+      test_server:
+          condition: service_started
+    command: bash -c "apt-get update && apt-get install -y curl python3 &&python3 send_data.py && tail -f /dev/null"
+    networks:
+     - test_network
+
+
+  test_server:
+    image: ubuntu:24.04
+    container_name: vm2_test_server
+    volumes:
+      - ./test_server.py:/app/test_server.py
+      - ./keys:/app/keys
+      - ./certs:/app/certs
+    working_dir: /app
+    #ports:
+      #- "8001:8001"
+    command: bash -c "apt-get update && apt-get install -y python3 && python3 test_server.py"
+    networks:
+      - test_network
+
+
+  mitmproxy:
+    image: python:3.12
+    container_name: vm2_mitmproxy
+    volumes:
+      - ./mproxy.py:/app/mproxy.py
+      - ./stats:/app/stats
+      - ./models:/app/models
+    working_dir: /app
+    #ports:
+      #- "8080:8080"
+    healthcheck:
+      test: curl -sS http://127.0.0.1:8080 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 10    
+    command: bash -c "pip install mitmproxy tensorflow && mitmdump -s mproxy.py --ssl-insecure"
+    networks:
+      - test_network
+
+networks:
+  test_network:
+    driver: bridge
